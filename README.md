@@ -2,8 +2,46 @@
 
 This example shows how to use Paraglide with TanStack Start.
 
+- Main repository: [timootten/start-i18n-paraglide](https://github.com/timootten/start-i18n-paraglide)
+- Based on TanStack Router example: [TanStack/router/tree/main/examples/react/start-i18n-paraglide](https://github.com/TanStack/router/tree/main/examples/react/start-i18n-paraglide)
+
 - [TanStack Router Docs](https://tanstack.com/router)
 - [Paraglide Documentation](https://inlang.com/m/gerre34r/library-inlang-paraglideJs)
+
+## Main Point: Easy Migration + No Hard Reload
+
+### What you need to migrate this into another project
+
+Required:
+
+1. `locale-context.tsx` for locale state and language switching
+2. Router rewrite config in `router.tsx` using `deLocalizeUrl` and `localizeUrl`
+3. `paraglideMiddleware` in `server.ts` for server-side locale handling
+
+Optional:
+
+- `utils/translated-pathnames.ts` only if you want translated route slugs.
+- Example: with translated pathnames: `/en/about` and `/de/ueber`
+- Example: without translated pathnames: `/en/about` and `/de/about`
+
+### Fix full hard reload on language switch
+
+Use router navigation, not `window.location`.
+
+```tsx
+// ❌ Causes full page reload
+const switchLanguage = (locale: Locale) => {
+  const newUrl = localizeUrl(window.location.href, { locale });
+  window.location.href = newUrl.href;
+};
+
+// ✅ Client-side navigation (no full reload)
+const switchLanguage = (locale: Locale) => {
+  const router = useRouter();
+  const newUrl = localizeUrl(window.location.href, { locale });
+  router.history.push(newUrl.pathname + newUrl.search + newUrl.hash);
+};
+```
 
 ## Start a new project based on this example
 
@@ -30,25 +68,25 @@ import react from '@vitejs/plugin-react'
 +import { paraglideVitePlugin } from "@inlang/paraglide-js";
 
 export default defineConfig({
-       plugins: [
+  plugins: [
     tanstackStart(),
     react(),
-+              paraglideVitePlugin({
-+                      project: "./project.inlang",
-+                      outdir: "./app/paraglide",
-+     outputStructure: "message-modules",
-+     cookieName: "PARAGLIDE_LOCALE",
-+     strategy: ["url", "cookie", "preferredLanguage", "baseLocale"],
++    paraglideVitePlugin({
++      project: "./project.inlang",
++      outdir: "./app/paraglide",
++      outputStructure: "message-modules",
++      cookieName: "PARAGLIDE_LOCALE",
++      strategy: ["url", "cookie", "preferredLanguage", "baseLocale"],
 +      urlPatterns: [
-+       {
-+         pattern: "/:path(.*)?",
-+         localized: [
-+           ["en", "/en/:path(.*)?"],
-+         ],
-+       },
-+     ],
-+              }),
-       ],
++        {
++          pattern: "/:path(.*)?",
++          localized: [
++            ["en", "/en/:path(.*)?"],
++          ],
++        },
++      ],
++    }),
+  ],
 });
 ```
 
@@ -77,19 +115,19 @@ const router = createRouter({
 In `server.ts` intercept the request with the paraglideMiddleware.
 
 ```ts
-import { paraglideMiddleware } from './paraglide/server.js'
-import handler from '@tanstack/react-start/server-entry'
+import { paraglideMiddleware } from "./paraglide/server.js";
+import handler from "@tanstack/react-start/server-entry";
 export default {
   fetch(req: Request): Promise<Response> {
-    return paraglideMiddleware(req, () => handler.fetch(req))
+    return paraglideMiddleware(req, () => handler.fetch(req));
   },
-}
+};
 ```
 
 In `__root.tsx` change the html lang attribute to the current locale.
 
 ```tsx
-import { getLocale } from '../paraglide/runtime.js'
+import { getLocale } from "../paraglide/runtime.js";
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
@@ -102,7 +140,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <Scripts />
       </body>
     </html>
-  )
+  );
 }
 ```
 
@@ -131,35 +169,35 @@ If you don't want to miss any translated path, you can create a `createTranslate
 
 ```ts
 // i18n/lib.ts
-import { Locale } from '@/paraglide/runtime'
-import { FileRoutesByTo } from '../routeTree.gen'
+import { Locale } from "@/paraglide/runtime";
+import { FileRoutesByTo } from "../routeTree.gen";
 
-type RoutePath = keyof FileRoutesByTo
+type RoutePath = keyof FileRoutesByTo;
 
-const excludedPaths = ['admin', 'docs', 'api'] as const
+const excludedPaths = ["admin", "docs", "api"] as const;
 
 type PublicRoutePath = Exclude<
   RoutePath,
   `${string}${(typeof excludedPaths)[number]}${string}`
->
+>;
 
 type TranslatedPathname = {
-  pattern: string
-  localized: Array<[Locale, string]>
-}
+  pattern: string;
+  localized: Array<[Locale, string]>;
+};
 
 function toUrlPattern(path: string) {
   return (
     path
       // catch-all
-      .replace(/\/\$$/, '/:path(.*)?')
+      .replace(/\/\$$/, "/:path(.*)?")
       // optional parameters: {-$param}
-      .replace(/\{-\$([a-zA-Z0-9_]+)\}/g, ':$1?')
+      .replace(/\{-\$([a-zA-Z0-9_]+)\}/g, ":$1?")
       // named parameters: $param
-      .replace(/\$([a-zA-Z0-9_]+)/g, ':$1')
+      .replace(/\$([a-zA-Z0-9_]+)/g, ":$1")
       // remove trailing slash
-      .replace(/\/+$/, '')
-  )
+      .replace(/\/+$/, "")
+  );
 }
 
 function createTranslatedPathnames(
@@ -174,26 +212,26 @@ function createTranslatedPathnames(
           string,
         ],
     ),
-  }))
+  }));
 }
 
 export const translatedPathnames = createTranslatedPathnames({
-  '/': {
-    en: '/',
-    de: '/',
+  "/": {
+    en: "/",
+    de: "/",
   },
-  '/about': {
-    en: '/about',
-    de: '/ueber',
+  "/about": {
+    en: "/about",
+    de: "/ueber",
   },
-})
+});
 ```
 
 And import into the Paraglide Vite plugin.
 
 ```ts
 // vite.config.ts
-import { translatedPathnames } from './i18n/lib'
+import { translatedPathnames } from "./i18n/lib";
 
 export default defineConfig({
   plugins: [
@@ -202,7 +240,7 @@ export default defineConfig({
       urlPatterns: translatedPathnames,
     }),
   ],
-})
+});
 ```
 
 ## Prerender routes
@@ -210,13 +248,13 @@ export default defineConfig({
 You can use the `localizeHref` function to map the routes to localized versions and import into the pages option in the TanStack Start plugin. For this to work you will need to compile paraglide before the build with the CLI.
 
 ```ts
-import { localizeHref } from './paraglide/runtime'
-export const prerenderRoutes = ['/', '/about'].map((path) => ({
+import { localizeHref } from "./paraglide/runtime";
+export const prerenderRoutes = ["/", "/about"].map((path) => ({
   path: localizeHref(path),
   prerender: {
     enabled: true,
   },
-}))
+}));
 ```
 
 ## About This Example
@@ -227,3 +265,4 @@ This example demonstrates:
 - Server-side translation
 - Type-safe translations
 - Locale-based routing
+- Smooth language switching without page reloads

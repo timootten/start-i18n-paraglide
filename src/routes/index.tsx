@@ -26,6 +26,7 @@ function Home() {
       <h2>Message from loader: {messageFromLoader}</h2>
       <h2>Server function message: {serverFunctionMessage}:</h2>
       <h2>{m.example_message({ username: 'John Doe' })}</h2>
+      <h2>Locale: {getLocale()}</h2>
     </div>
   )
 }

@@ -1,10 +1,12 @@
 import { createRouter } from '@tanstack/react-router'
-
-// Import the generated route tree
 import { routeTree } from './routeTree.gen'
 import { deLocalizeUrl, localizeUrl } from './paraglide/runtime'
 
-// Create a new router instance
+/**
+ * Creates the router instance with i18n URL rewriting
+ * - input: Strips locale prefix from incoming URLs for routing logic
+ * - output: Adds locale prefix to outgoing URLs for navigation
+ */
 export const getRouter = () => {
   return createRouter({
     routeTree,

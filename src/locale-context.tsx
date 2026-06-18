@@ -16,11 +16,25 @@ type LocaleContextValue = {
 
 const LocaleContext = React.createContext<LocaleContextValue | null>(null)
 
+/**
+ * Sets the locale cookie with proper domain and expiration settings
+ */
+function setLocaleCookie(locale: Locale) {
+  const cookieString = `${cookieName}=${locale}; path=/; max-age=${cookieMaxAge}`
+  document.cookie = cookieDomain
+    ? `${cookieString}; domain=${cookieDomain}`
+    : cookieString
+}
+
+/**
+ * Provider component that manages locale state and synchronization
+ * Wraps your app to enable i18n functionality
+ */
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = React.useState<Locale>(() => getLocale())
   const router = useRouter()
 
-  // Sync locale state when URL changes
+  // Sync locale state when URL changes (e.g., browser back/forward)
   React.useEffect(() => {
     const currentLocale = getLocale()
     if (currentLocale !== locale) {
@@ -31,13 +45,10 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
 
   const switchLanguage = React.useCallback(
     (nextLocale: Locale) => {
-      // Update the cookie
-      const cookieString = `${cookieName}=${nextLocale}; path=/; max-age=${cookieMaxAge}`
-      document.cookie = cookieDomain
-        ? `${cookieString}; domain=${cookieDomain}`
-        : cookieString
+      // Persist locale preference
+      setLocaleCookie(nextLocale)
 
-      // Get the localized URL for the new locale
+      // Get the localized URL for the target locale
       const newUrl = localizeUrl(window.location.href, {
         locale: nextLocale,
       })
@@ -46,7 +57,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       setLocaleState(nextLocale)
       document.documentElement.lang = nextLocale
 
-      // Navigate using the router (no full page reload)
+      // Navigate to localized URL (SPA navigation, no page reload)
       router.history.push(newUrl.pathname + newUrl.search + newUrl.hash)
     },
     [router]
@@ -59,8 +70,14 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
+/**
+ * Hook to access current locale and language switching function
+ * @throws Error if used outside LocaleProvider
+ */
 export function useLocale() {
   const ctx = React.useContext(LocaleContext)
-  if (!ctx) throw new Error('useLocale must be used inside LocaleProvider')
+  if (!ctx) {
+    throw new Error('useLocale must be used within LocaleProvider')
+  }
   return ctx
 }

@@ -1,34 +1,53 @@
-import { Locale } from '@/paraglide/runtime'
-import { FileRoutesByTo } from '../routeTree.gen'
+/**
+ * Translated Pathnames Configuration
+ *
+ * This file is OPTIONAL. Only use it if you want different URL paths for different languages.
+ *
+ * Examples:
+ * - WITH translated pathnames: /en/about vs /de/ueber
+ * - WITHOUT translated pathnames: /en/about vs /de/about
+ *
+ * If all your routes use the same paths across languages (just different locale prefixes),
+ * you can delete this file and remove the urlPatterns from vite.config.ts.
+ */
 
-type RoutePath = keyof FileRoutesByTo
+import { Locale } from "@/paraglide/runtime";
+import { FileRoutesByTo } from "../routeTree.gen";
 
-const excludedPaths = ['admin', 'docs', 'api'] as const
+type RoutePath = keyof FileRoutesByTo;
+
+/**
+ * Paths to exclude from translation (e.g., admin panels, API routes)
+ */
+const excludedPaths = ["admin", "docs", "api"] as const;
 
 type PublicRoutePath = Exclude<
   RoutePath,
   `${string}${(typeof excludedPaths)[number]}${string}`
->
+>;
 
 type TranslatedPathname = {
-  pattern: string
-  localized: Array<[Locale, string]>
+  pattern: string;
+  localized: Array<[Locale, string]>;
+};
+
+/**
+ * Converts TanStack Router path syntax to URL pattern format
+ * - Converts catch-all: /$ → /:path(.*)?
+ * - Converts optional params: {-$param} → :param?
+ * - Converts named params: $param → :param
+ */
+function toUrlPattern(path: string): string {
+  return path
+    .replace(/\/\$$/, "/:path(.*)?")
+    .replace(/\{-\$([a-zA-Z0-9_]+)\}/g, ":$1?")
+    .replace(/\$([a-zA-Z0-9_]+)/g, ":$1")
+    .replace(/\/+$/, "");
 }
 
-function toUrlPattern(path: string) {
-  return (
-    path
-      // catch-all
-      .replace(/\/\$$/, '/:path(.*)?')
-      // optional parameters: {-$param}
-      .replace(/\{-\$([a-zA-Z0-9_]+)\}/g, ':$1?')
-      // named parameters: $param
-      .replace(/\$([a-zA-Z0-9_]+)/g, ':$1')
-      // remove trailing slash
-      .replace(/\/+$/, '')
-  )
-}
-
+/**
+ * Creates translated pathname configuration for routing
+ */
 function createTranslatedPathnames(
   input: Record<PublicRoutePath, Record<Locale, string>>,
 ): TranslatedPathname[] {
@@ -41,16 +60,20 @@ function createTranslatedPathnames(
           string,
         ],
     ),
-  }))
+  }));
 }
 
+/**
+ * Pathname translations for all routes
+ * Add your route paths here with translations for each locale
+ */
 export const translatedPathnames = createTranslatedPathnames({
-  '/': {
-    en: '/',
-    de: '/',
+  "/": {
+    en: "/",
+    de: "/",
   },
-  '/about': {
-    en: '/about',
-    de: '/ueber',
+  "/about": {
+    en: "/about",
+    de: "/ueber",
   },
-})
+});
