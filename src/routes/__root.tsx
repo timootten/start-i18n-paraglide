@@ -86,7 +86,9 @@ function RootDocumentInner({ children }: { children: React.ReactNode }) {
 
         <hr />
 
-        <div className="p-2">{children}</div>
+        <div key={locale} className="p-2">
+          {children}
+        </div>
 
         <TanStackDevtools
           config={{
